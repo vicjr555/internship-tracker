@@ -21,6 +21,7 @@
       <ul><li><a href="{% url 'listings:list' %}"><strong>Internship Tracker</strong></a></li></ul>
       <ul>
         <li><a href="{% url 'listings:list' %}">Postings</a></li>
+        <li><a href="{% url 'stats:stats' %}">Stats</a></li>
         {% if user.is_authenticated %}
           <li><a href="{% url 'applications:list' %}">My applications</a></li>
           {% if user.is_staff %}<li><a href="{% url 'admin:index' %}">Admin</a></li>{% endif %}

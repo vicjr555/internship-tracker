@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "accounts",
     "listings",
     "applications",
+    "stats",
 ]
 
 MIDDLEWARE = [

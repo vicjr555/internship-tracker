@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Stats · Internship Tracker{% endblock %}
+
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+  <style>
+    .tile { text-align: center; margin-bottom: 0; }
+    .tile strong { display: block; font-size: 2rem; line-height: 1.2; }
+    .chart { position: relative; height: 280px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h1>Stats</h1>
+
+  <section>
+    <h2>Market</h2>
+    <div class="grid">
+      <article class="tile"><strong>{{ market.active_count }}</strong>open postings</article>
+      <article class="tile">
+        <strong>{{ market.median_days_open|default_if_none:"—" }}{% if market.median_days_open is not None %}d{% endif %}</strong>
+        median days a posting stays open
+        <br><small class="muted">{% if market.closed_sample_size %}from {{ market.closed_sample_size }} closed postings{% else %}not enough closings observed yet{% endif %}</small>
+      </article>
+    </div>
+
+    <article>
+      <header>New postings per week</header>
+      <div class="chart"><canvas id="weekly-postings" role="img" aria-label="Line chart of new postings per week"></canvas></div>
+      <details><summary>Show data</summary>
+        <table><thead><tr><th>Week of</th><th>Postings</th></tr></thead><tbody>
+          {% for label, value in market.weekly_postings.rows %}<tr><td>{{ label }}</td><td>{{ value }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+    </article>
+
+    <div class="grid">
+      <article>
+        <header>Top hiring companies (open postings)</header>
+        <div class="chart"><canvas id="top-companies" role="img" aria-label="Bar chart of the 10 companies with the most open postings"></canvas></div>
+        <details><summary>Show data</summary>
+          <table><tbody>
+            {% for label, value in market.top_companies.rows %}<tr><td>{{ label }}</td><td>{{ value }}</td></tr>{% endfor %}
+          </tbody></table>
+        </details>
+      </article>
+      <article>
+        <header>Top locations (open postings)</header>
+        <table>
+          <thead><tr><th>Location</th><th>Postings</th></tr></thead>
+          <tbody>
+            {% for location, count in market.top_locations %}<tr><td>{{ location }}</td><td>{{ count }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>My pipeline</h2>
+    {% if personal %}
+      {% if personal.tracked %}
+        <div class="grid">
+          {% for stage in personal.funnel %}
+            <article class="tile">
+              <strong>{{ stage.count }}</strong>{{ stage.label }}
+              <br><small class="muted">{% if stage.rate_from_previous is not None %}{{ stage.rate_from_previous }}% of previous stage{% else %}&nbsp;{% endif %}</small>
+            </article>
+          {% endfor %}
+          <article class="tile">
+            <strong>{{ personal.median_days_to_oa|default_if_none:"—" }}{% if personal.median_days_to_oa is not None %}d{% endif %}</strong>
+            median days from Applied to OA
+            <br><small class="muted">{% if personal.oa_sample_size %}from {{ personal.oa_sample_size }} application{{ personal.oa_sample_size|pluralize }}{% else %}no OAs yet{% endif %}</small>
+          </article>
+        </div>
+        <article>
+          <header>Applications per week</header>
+          <div class="chart"><canvas id="weekly-applications" role="img" aria-label="Bar chart of applications submitted per week"></canvas></div>
+        </article>
+      {% else %}
+        <article>Track and apply to some postings to see your funnel here.</article>
+      {% endif %}
+    {% else %}
+      <article><a href="{% url 'login' %}?next={{ request.path|urlencode }}">Log in</a> to see your application funnel.</article>
+    {% endif %}
+  </section>
+
+  {{ market.weekly_postings|json_script:"weekly-postings-data" }}
+  {{ market.top_companies|json_script:"top-companies-data" }}
+  {% if personal %}{{ personal.weekly_applications|json_script:"weekly-applications-data" }}{% endif %}
+
+  <script>
+    // Tiny Chart.js config. Data comes from the json_script tags above (safely escaped).
+    document.addEventListener("DOMContentLoaded", () => {
+      const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+      const color = dark ? "#3987e5" : "#2a78d6";  // Single-series blue, stepped for each theme.
+      const css = getComputedStyle(document.documentElement);
+      Chart.defaults.color = css.getPropertyValue("--pico-muted-color").trim();
+      Chart.defaults.borderColor = css.getPropertyValue("--pico-muted-border-color").trim();
+      Chart.defaults.maintainAspectRatio = false;
+      Chart.defaults.plugins.legend.display = false;  // One series per chart; the header names it.
+
+      const read = (id) => JSON.parse(document.getElementById(id).textContent);
+      const draw = (canvasId, dataId, type, options = {}) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const { labels, values } = read(dataId);
+        new Chart(canvas, {
+          type,
+          data: { labels, datasets: [{ data: values, backgroundColor: color, borderColor: color,
+            borderWidth: 2, borderRadius: 4, maxBarThickness: 28, pointRadius: 0, pointHoverRadius: 5 }] },
+          options: { interaction: { mode: "index", intersect: false },
+                     scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }, ...options },
+        });
+      };
+
+      draw("weekly-postings", "weekly-postings-data", "line");
+      draw("top-companies", "top-companies-data", "bar", {
+        indexAxis: "y", scales: { x: { beginAtZero: true }, y: { grid: { display: false } } },
+      });
+      draw("weekly-applications", "weekly-applications-data", "bar");
+    });
+  </script>
+{% endblock %}

@@ -9,6 +9,7 @@
   <style>
     .badge { font-size: .75rem; padding: .1rem .4rem; border-radius: .25rem; background: var(--pico-primary); color: var(--pico-primary-inverse); }
     .muted { color: var(--pico-muted-color); }
+    .closed { color: var(--pico-del-color); font-weight: 600; }
     table { font-size: .9rem; }
   </style>
   {% block head %}{% endblock %}
@@ -17,10 +18,23 @@
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="container">
     <nav>
-      <ul><li><a href="/"><strong>Internship Tracker</strong></a></li></ul>
+      <ul><li><a href="{% url 'listings:list' %}"><strong>Internship Tracker</strong></a></li></ul>
       <ul>
-        {% block nav %}{% endblock %}
-        {% if user.is_staff %}<li><a href="/admin/">Admin</a></li>{% endif %}
+        <li><a href="{% url 'listings:list' %}">Postings</a></li>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'applications:list' %}">My applications</a></li>
+          {% if user.is_staff %}<li><a href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
+          <li>
+            {# Logout is a POST (with CSRF token) so a link on another site can't log you out. #}
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="outline secondary" style="padding: .2rem .6rem; margin: 0;">Log out {{ user.username }}</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a href="{% url 'login' %}">Log in</a></li>
+          <li><a href="{% url 'signup' %}" role="button" style="padding: .2rem .6rem;">Sign up</a></li>
+        {% endif %}
       </ul>
     </nav>
   </header>

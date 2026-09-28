@@ -29,6 +29,8 @@
                 <span class="muted">✓ Tracked</span>
               {% elif user.is_authenticated %}
                 {% include "applications/_track_button.html" %}
+              {% else %}
+                <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="muted">Log in to track</a>
               {% endif %}
             </td>
           </tr>

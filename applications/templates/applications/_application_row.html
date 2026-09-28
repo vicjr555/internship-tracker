@@ -1,0 +1,30 @@
+{# One row of My Applications. Returned on its own after an inline status change. #}
+<tr id="application-{{ application.pk }}">
+  <td><strong>{{ application.listing.company }}</strong></td>
+  <td>
+    <a href="{{ application.listing.url }}" target="_blank" rel="noopener noreferrer">{{ application.listing.title }}</a>
+    {% if not application.listing.is_active %}
+      <br><small class="closed">Closed {{ application.listing.closed_at|date:"M j, Y" }}</small>
+    {% endif %}
+  </td>
+  <td>
+    <select name="status" aria-label="Status" style="margin: 0;"
+            hx-post="{% url 'applications:update_status' application.pk %}"
+            hx-trigger="change" hx-target="closest tr" hx-swap="outerHTML">
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if application.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </td>
+  <td>{{ application.applied_at|date:"M j"|default:"—" }}</td>
+  <td>
+    <details style="margin: 0;">
+      <summary>{{ application.status_changes.all|length }} change{{ application.status_changes.all|length|pluralize }}</summary>
+      <ul>
+        {% for change in application.status_changes.all %}
+          <li><small>{{ change.changed_at|date:"M j" }}: {{ change.get_from_status_display|default:"Tracked" }} → {{ change.get_to_status_display }}</small></li>
+        {% endfor %}
+      </ul>
+    </details>
+  </td>
+</tr>

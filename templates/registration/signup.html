@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Sign up · Internship Tracker{% endblock %}
+
+{% block content %}
+  <article style="max-width: 28rem; margin-inline: auto;">
+    <h1>Sign up</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_div }}
+      <button type="submit">Create account</button>
+    </form>
+    <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+  </article>
+{% endblock %}

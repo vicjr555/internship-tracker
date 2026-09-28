@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}My applications · Internship Tracker{% endblock %}
+
+{% block content %}
+  <h1>My applications</h1>
+
+  <nav aria-label="Filter by status">
+    <ul style="flex-wrap: wrap;">
+      <li><a href="?" {% if not selected %}aria-current="page"{% endif %}>All ({{ total }})</a></li>
+      {% for value, label, count in status_tabs %}
+        <li><a href="?status={{ value }}" {% if selected == value %}aria-current="page"{% endif %}>{{ label }} ({{ count }})</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  {% if applications %}
+    <div class="overflow-auto">
+      <table class="striped">
+        <thead>
+          <tr><th>Company</th><th>Role</th><th>Status</th><th>Applied</th><th>History</th></tr>
+        </thead>
+        <tbody>
+          {% for application in applications %}
+            {% include "applications/_application_row.html" %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% elif total %}
+    <article>No applications with this status.</article>
+  {% else %}
+    <article>
+      You're not tracking anything yet. Find a posting on the
+      <a href="{% url 'listings:list' %}">postings page</a> and click <strong>Track</strong>.
+    </article>
+  {% endif %}
+{% endblock %}

@@ -14,6 +14,13 @@ def simple_static_storage(settings):
 
 
 @pytest.fixture(autouse=True)
+def no_https_redirect(settings):
+    """With DEBUG=False (as in CI), production settings redirect every plain-HTTP
+    request to HTTPS. The test client speaks plain HTTP, so turn that off in tests."""
+    settings.SECURE_SSL_REDIRECT = False
+
+
+@pytest.fixture(autouse=True)
 def block_network():
     """Fail loudly if any test makes a real HTTP request through `requests`.
     Tests that need HTTP mock `requests.get` themselves, which bypasses this."""

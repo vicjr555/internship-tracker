@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Internship Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <style>
+    .badge { font-size: .75rem; padding: .1rem .4rem; border-radius: .25rem; background: var(--pico-primary); color: var(--pico-primary-inverse); }
+    .muted { color: var(--pico-muted-color); }
+    table { font-size: .9rem; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+{# hx-headers sends the CSRF token with every HTMX request, so CSRF protection stays on. #}
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/"><strong>Internship Tracker</strong></a></li></ul>
+      <ul>
+        {% block nav %}{% endblock %}
+        {% if user.is_staff %}<li><a href="/admin/">Admin</a></li>{% endif %}
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% if messages %}
+      {% for message in messages %}<article>{{ message }}</article>{% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="container">
+    <small class="muted">
+      Data from <a href="https://github.com/SimplifyJobs/Summer2027-Internships" target="_blank" rel="noopener">SimplifyJobs / Pitt CSC</a>.
+    </small>
+  </footer>
+</body>
+</html>

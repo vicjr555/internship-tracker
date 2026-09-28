@@ -1,4 +1,5 @@
 {% load listing_extras %}
+{% include "listings/_live_status.html" %}
 <p class="muted">
   {{ page.paginator.count }} open posting{{ page.paginator.count|pluralize }}
   {% if page.paginator.num_pages > 1 %}· page {{ page.number }} of {{ page.paginator.num_pages }}{% endif %}

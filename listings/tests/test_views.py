@@ -6,9 +6,15 @@ from django.urls import reverse
 from django.utils import timezone
 
 from applications.models import Application
-from listings.models import Listing
+from listings.models import Listing, SyncRun
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def fresh_sync():
+    """Mark the data as just synced so page loads don't trigger a lazy refresh."""
+    SyncRun.objects.create(status=SyncRun.Status.SUCCESS, finished_at=timezone.now())
 
 
 def make_listing(external_id, days_old=1, **overrides):

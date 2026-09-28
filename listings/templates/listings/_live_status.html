@@ -1,0 +1,24 @@
+{# Polls itself every 60s and swaps in a fresh copy (hx-swap="outerHTML"). #}
+<div id="live-status"
+     hx-get="{% url 'listings:updates' %}?since={{ since_ts }}{% if filter_query %}&{{ filter_query }}{% endif %}"
+     hx-trigger="every 60s" hx-swap="outerHTML">
+  {% if new_count or closed_count %}
+    <article style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+      <span>
+        {% if new_count %}<strong>{{ new_count }} new posting{{ new_count|pluralize }}</strong>{% endif %}
+        {% if new_count and closed_count %}·{% endif %}
+        {% if closed_count %}{{ closed_count }} closed{% endif %}
+        since you loaded this page.
+      </span>
+      {# hx-swap is set explicitly because it would otherwise inherit "outerHTML" from the div. #}
+      <button style="margin: 0;"
+              hx-get="{% url 'listings:list' %}{% if filter_query %}?{{ filter_query }}{% endif %}"
+              hx-target="#results" hx-swap="innerHTML">
+        Refresh list
+      </button>
+    </article>
+  {% endif %}
+  <small class="muted">
+    {% if last_sync %}Last synced {{ last_sync.finished_at|timesince }} ago{% else %}Not synced yet{% endif %}
+  </small>
+</div>

@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = (10, 60)  # (connect, read) seconds. The file is about 13 MB.
 LOCK_TIMEOUT = timedelta(minutes=10)  # A lock older than this was left by a crashed sync.
+LAZY_REFRESH_AFTER = timedelta(minutes=10)  # Page loads trigger a sync when data is older.
+RETRY_BACKOFF = timedelta(minutes=2)  # Minimum gap between lazy attempts after a failure.
 BATCH_SIZE = 500
 
 # The source uses a few different names for the same category.
@@ -88,6 +90,51 @@ def sync_listings(force=False):
         run.save()
         _release_lock()
     return run
+
+
+def last_successful_run():
+    """The most recent run that confirmed our data matches the source (200 or 304)."""
+    return (
+        SyncRun.objects.filter(
+            status__in=[SyncRun.Status.SUCCESS, SyncRun.Status.NOT_MODIFIED],
+            finished_at__isnull=False,
+        )
+        .order_by("-finished_at")
+        .first()
+    )
+
+
+def sync_if_stale(max_age=LAZY_REFRESH_AFTER):
+    """Lazy refresh: sync only if the last successful sync is older than max_age.
+
+    Returns the SyncRun, or None if no sync was needed (or another one is running).
+    """
+    now = timezone.now()
+    last_success = last_successful_run()
+    if last_success and last_success.finished_at > now - max_age:
+        return None
+    # If a sync was attempted very recently (and failed), wait before retrying, so
+    # every page load doesn't hit a source that is down.
+    if SyncRun.objects.filter(started_at__gt=now - RETRY_BACKOFF).exists():
+        return None
+    return sync_listings()
+
+
+def run_summary(run):
+    """A JSON-serializable summary of a SyncRun."""
+    return {
+        "id": run.pk,
+        "status": run.status,
+        "started_at": run.started_at.isoformat(),
+        "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+        "duration_seconds": round(run.duration.total_seconds(), 2) if run.duration else None,
+        "total_in_source": run.total_in_source,
+        "new": run.new_count,
+        "updated": run.updated_count,
+        "closed": run.closed_count,
+        "reopened": run.reopened_count,
+        "error_message": run.error_message,
+    }
 
 
 def normalize_category(category):

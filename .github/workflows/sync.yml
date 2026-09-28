@@ -1,0 +1,34 @@
+name: Sync listings
+
+# Every 15 minutes, ask the deployed app to sync listings from the source.
+# GitHub may start scheduled runs a few minutes late when its runners are busy.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # Adds a "Run workflow" button for manual syncs.
+
+# Never run two of these at once; the app's lock would reject the second anyway.
+concurrency:
+  group: sync-listings
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Skipped (and costs no Actions minutes) until the SYNC_URL variable is set,
+    # i.e. until the app is deployed.
+    if: ${{ vars.SYNC_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /internal/sync/
+        env:
+          SYNC_URL: ${{ vars.SYNC_URL }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          # --retry covers a free-tier host that is still waking up from sleep.
+          # --fail-with-body makes the job fail (and show the JSON) on a 4xx/5xx.
+          curl --silent --show-error --fail-with-body \
+            --max-time 120 --retry 3 --retry-delay 20 --retry-all-errors \
+            -X POST \
+            -H "Authorization: Bearer ${SYNC_TOKEN}" \
+            "${SYNC_URL}"

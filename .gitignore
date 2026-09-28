@@ -21,3 +21,6 @@ staticfiles/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local tool config
+.claude/

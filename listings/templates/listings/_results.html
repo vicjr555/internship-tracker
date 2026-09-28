@@ -1,0 +1,56 @@
+{% load listing_extras %}
+<p class="muted">
+  {{ page.paginator.count }} open posting{{ page.paginator.count|pluralize }}
+  {% if page.paginator.num_pages > 1 %}· page {{ page.number }} of {{ page.paginator.num_pages }}{% endif %}
+</p>
+
+{% if page.object_list %}
+  <div class="overflow-auto">
+    <table class="striped">
+      <thead>
+        <tr><th>Company</th><th>Role</th><th>Location</th><th>Age</th><th></th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for listing in page.object_list %}
+          <tr>
+            <td><strong>{{ listing.company }}</strong></td>
+            <td>
+              {{ listing.title }}
+              {% if listing.is_new %}<span class="badge">NEW</span>{% endif %}
+            </td>
+            <td title="{{ listing.locations|join:'; ' }}">
+              {{ listing.locations|slice:":3"|join:"; " }}
+              {% if listing.locations|length > 3 %}<span class="muted">+{{ listing.locations|length|add:"-3" }} more</span>{% endif %}
+            </td>
+            <td title="{{ listing.date_posted }}">{{ listing.date_posted|age }}</td>
+            <td><a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">Apply</a></td>
+            <td>
+              {% if listing.is_tracked %}
+                <span class="muted">✓ Tracked</span>
+              {% elif user.is_authenticated %}
+                {% include "applications/_track_button.html" %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page.paginator.num_pages > 1 %}
+    <nav>
+      <ul>
+        {% if page.has_previous %}
+          <li><a href="{% querystring page=page.previous_page_number %}" hx-get="{% querystring page=page.previous_page_number %}" hx-target="#results" hx-push-url="true">← Newer</a></li>
+        {% endif %}
+      </ul>
+      <ul>
+        {% if page.has_next %}
+          <li><a href="{% querystring page=page.next_page_number %}" hx-get="{% querystring page=page.next_page_number %}" hx-target="#results" hx-push-url="true">Older →</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% else %}
+  <article>No open postings match these filters.</article>
+{% endif %}

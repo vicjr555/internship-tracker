@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Internship postings · Internship Tracker{% endblock %}
+
+{% block content %}
+  <hgroup>
+    <h1>Internship postings</h1>
+    <p>Open postings mirrored live from the SimplifyJobs list.</p>
+  </hgroup>
+
+  {# Works as a plain GET form without JavaScript; with HTMX it swaps in only the results. #}
+  <form method="get" action="{% url 'listings:list' %}"
+        hx-get="{% url 'listings:list' %}" hx-target="#results" hx-push-url="true"
+        hx-trigger="input delay:400ms, submit">
+    <div class="grid">
+      <label>{{ form.q.label }} {{ form.q }}</label>
+      <label>{{ form.location.label }} {{ form.location }}</label>
+      <label>{{ form.category.label }} {{ form.category }}</label>
+      <label>{{ form.posted_within.label }} {{ form.posted_within }}</label>
+    </div>
+    {% if user.is_authenticated %}
+      <label><input type="checkbox" role="switch" name="hide_tracked" {% if form.hide_tracked.value %}checked{% endif %}> {{ form.hide_tracked.label }}</label>
+    {% endif %}
+    <noscript><button type="submit">Filter</button></noscript>
+  </form>
+
+  <div id="results">
+    {% include "listings/_results.html" %}
+  </div>
+{% endblock %}

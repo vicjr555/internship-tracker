@@ -3,10 +3,13 @@ from datetime import datetime
 from datetime import timezone as dt_timezone
 
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Exists, OuterRef, Value
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -14,7 +17,7 @@ from django.views.decorators.http import require_POST
 from applications.models import Application
 
 from .forms import ListingFilterForm
-from .models import Listing, SyncRun
+from .models import Listing, SyncRun, SyncState
 from .services.sync import last_successful_run, run_summary, sync_if_stale, sync_listings
 
 PAGE_SIZE = 50
@@ -62,6 +65,30 @@ def listing_updates(request):
     context["new_count"] = matching.filter(is_active=True, first_seen_at__gt=since).count()
     context["closed_count"] = matching.filter(is_active=False, closed_at__gt=since).count()
     return render(request, "listings/_live_status.html", context)
+
+
+@login_required
+def sync_status(request):
+    """Staff-only: recent sync runs, plus a "Sync now" button (POST)."""
+    if not request.user.is_staff:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        run = sync_listings()
+        if run is None:
+            messages.warning(request, "A sync is already running. Try again in a moment.")
+        elif run.status == SyncRun.Status.FAILED:
+            messages.error(request, f"Sync failed: {run.error_message}")
+        else:
+            messages.success(request, f"Sync finished: {run.get_status_display().lower()}.")
+        # Post/Redirect/Get: refreshing the page afterwards won't re-submit the sync.
+        return redirect("listings:sync_status")
+
+    return render(request, "listings/sync_status.html", {
+        "runs": SyncRun.objects.all()[:50],
+        "state": SyncState.load(),
+        "last_success": last_successful_run(),
+    })
 
 
 @csrf_exempt  # Called by GitHub Actions with a token, not by a browser with a session cookie.

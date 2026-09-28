@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Sync status · Internship Tracker{% endblock %}
+
+{% block content %}
+  <h1>Sync status</h1>
+
+  <div class="grid">
+    <article>
+      <strong>Last successful sync</strong><br>
+      {% if last_success %}{{ last_success.finished_at|timesince }} ago{% else %}Never{% endif %}
+    </article>
+    <article>
+      <strong>Lock</strong><br>
+      {% if state.locked_at %}Held since {{ state.locked_at|time:"H:i:s" }} UTC{% else %}Free{% endif %}
+    </article>
+    <article>
+      <strong>Stored ETag</strong><br>
+      <small class="muted" style="word-break: break-all;">{{ state.etag|default:"none" }}</small>
+    </article>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" onclick="this.setAttribute('aria-busy', 'true'); this.textContent = 'Syncing…';">Sync now</button>
+  </form>
+
+  <h2>Recent runs</h2>
+  <div class="overflow-auto">
+    <table class="striped">
+      <thead>
+        <tr><th>Started (UTC)</th><th>Status</th><th>Duration</th><th>In source</th><th>New</th><th>Updated</th><th>Closed</th><th>Reopened</th><th>Error</th></tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+          <tr>
+            <td>{{ run.started_at|date:"M j, H:i:s" }}</td>
+            <td>{% if run.status == "failed" %}<span class="closed">{{ run.get_status_display }}</span>{% else %}{{ run.get_status_display }}{% endif %}</td>
+            <td>{% if run.duration %}{{ run.duration.total_seconds|floatformat:1 }}s{% else %}—{% endif %}</td>
+            <td>{{ run.total_in_source }}</td>
+            <td>{{ run.new_count }}</td>
+            <td>{{ run.updated_count }}</td>
+            <td>{{ run.closed_count }}</td>
+            <td>{{ run.reopened_count }}</td>
+            <td><small>{{ run.error_message|truncatechars:120 }}</small></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9">No sync runs yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

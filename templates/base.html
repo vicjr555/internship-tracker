@@ -24,7 +24,10 @@
         <li><a href="{% url 'stats:stats' %}">Stats</a></li>
         {% if user.is_authenticated %}
           <li><a href="{% url 'applications:list' %}">My applications</a></li>
-          {% if user.is_staff %}<li><a href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
+          {% if user.is_staff %}
+            <li><a href="{% url 'listings:sync_status' %}">Sync status</a></li>
+            <li><a href="{% url 'admin:index' %}">Admin</a></li>
+          {% endif %}
           <li>
             {# Logout is a POST (with CSRF token) so a link on another site can't log you out. #}
             <form method="post" action="{% url 'logout' %}" style="margin: 0;">
